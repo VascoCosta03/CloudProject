@@ -37,4 +37,27 @@ router.delete("/:movie_id", async (req, res) => {
   res.send(results).status(200);
 });
 
+router.post("/", async (req, res) => {
+  // inserir varios movies
+  let movie = req.body;
+  let results = await db.collection('movies').insertMany(movie);
+  res.send(results).status(200);
+});
+
+router.get("/:id", async (req, res) => {
+  // retornar os 5 melhores filmes pelo rating
+  let id = parseInt(req.params.id); // adicionar o match
+
+  const topMovies = await db.collection('users').aggregate([
+      { $unwind: "$movies" },
+      { $group: {
+          _id: "$movies.movieid",
+          ratings_totais: { $count: "movies.rating"}
+      }},
+      { $sort: { ratings_totais: -1 }}.limit(5),
+  ]).toArray();
+
+  res.status(200).json({ id, topMovies });
+});
+
 export default router;

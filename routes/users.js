@@ -41,4 +41,23 @@ router.delete("/:user_id", async (req, res) => {
   res.send(results).status(200);
 });
 
+router.get("/", async (req, res) => {
+  //retornar por paginação e limite de users ex1
+  const page = parseInt(req.query.page);
+  const limit = parseInt(req.query.limit);
+
+  const totalMovies = await db.collection('users').countDocuments();
+  const totalPages = Math.ceil(totalMovies / limit);
+
+  const skip = (page - 1) * limit;
+  const movies = await db.collection('users').find({}).skip(skip).limit(limit).toArray();
+
+  res.status(200).json({
+      movies,
+      currentPage: page,
+      totalPages,
+      totalMovies
+  });
+});
+
 export default router;
