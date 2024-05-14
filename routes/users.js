@@ -4,8 +4,63 @@ import { ObjectId } from "mongodb";
 
 const router = express.Router();
 
+
+// 2 - return users by pagination and limit
 router.get("/", async (req, res) => {
-  let results = await db.collection("users").find({}).toArray();
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 20;
+
+  let results = await db.collection("users").find({}).skip((page - 1) * 20).limit(limit).toArray();
+  res.send(results).status(200);
+});
+
+// 4 - create a new user
+router.post("/", async (req, res) => {
+  let user = req.body;
+  let results = await db.collection("users").insertOne(user);
+  res.send(results).status(200);
+});
+
+// 6 - return user by id and top 5 movies
+router.get("/:id", async (req, res) => {
+  let id = parseInt(req.params.id);
+
+  const user = await db.collection('users').findOne({ _id: id });
+
+  const moviesRating = await db.collection('users').aggregate([
+    { $match: { _id: id } },
+    { $unwind: "$movies" },
+    { $sort: { "movies.rating": -1 } },
+    { $limit: 5 },
+    { $lookup: {
+        from: 'movies',
+        localField: 'movies.movieid',
+        foreignField: '_id',
+        as: 'movie'
+    }},
+    { $unwind: "$movie" },
+    { $project: {
+        _id: 0,
+        movie: 1,
+        rating: "$movies.rating"
+    }}
+  ]).toArray();
+
+  res.status(200).json({ user, moviesRating });
+});
+
+// 8 - delete user by id
+router.delete("/:user_id", async (req, res) => {
+  let id = parseInt(req.params.user_id);
+  let results = await db.collection("users").deleteOne({ _id: id });
+  res.send(results).status(200);
+});
+
+// 10 - update user
+router.put("/:user_id", async (req, res) => {
+  let id = parseInt(req.params.user_id);
+  let user = req.body;
+  let results = await db.collection("users").updateOne({ _id: id }, { $set: user });
   res.send(results).status(200);
 });
 
@@ -20,44 +75,5 @@ router.get("/:gender/:age", async (req, res) => {
   res.send(results).status(200);
 });
 
-router.post("/", async (req, res) => {
-  // create a new user
-  let user = req.body;
-  let results = await db.collection("users").insertOne(user);
-  res.send(results).status(200);
-});
-
-router.get("/:user_id", async (req, res) => {
-  // return user by id
-  let id = parseInt(req.params.user_id);
-  let results = await db.collection("users").findOne({ _id: id });
-  res.send(results).status(200);
-});
-
-router.delete("/:user_id", async (req, res) => {
-  // delete user by id
-  let id = parseInt(req.params.user_id);
-  let results = await db.collection("users").deleteOne({ _id: id });
-  res.send(results).status(200);
-});
-
-router.get("/", async (req, res) => {
-  //retornar por paginação e limite de users ex1
-  const page = parseInt(req.query.page);
-  const limit = parseInt(req.query.limit);
-
-  const totalMovies = await db.collection('users').countDocuments();
-  const totalPages = Math.ceil(totalMovies / limit);
-
-  const skip = (page - 1) * limit;
-  const movies = await db.collection('users').find({}).skip(skip).limit(limit).toArray();
-
-  res.status(200).json({
-      movies,
-      currentPage: page,
-      totalPages,
-      totalMovies
-  });
-});
 
 export default router;

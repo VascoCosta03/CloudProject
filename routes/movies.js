@@ -4,17 +4,60 @@ import { ObjectId } from "mongodb";
 
 const router = express.Router();
 
+
+// 1 - return movies by pagination and limit
 router.get("/", async (req, res) => {
-  let results = await db.collection("movies").find({}).toArray();
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 20;
+  let results = await db.collection("movies").find({}).skip((page - 1) * 20).limit(limit).toArray();
   res.send(results).status(200);
 });
 
-router.get("/:movie_id", async (req, res) => {
-  // return movie by id
-  let id = parseInt(req.params.movie_id);
-  let results = await db.collection("movies").findOne({ _id: id });
+// 3 - create a new movie
+router.post("/", async (req, res) => {
+  let movie = req.body;
+  let results = await db.collection("movies").insertOne(movie);
   res.send(results).status(200);
 });
+
+// 5 - return movie by id and average rating
+router.get("/:movie_id", async (req, res) => {
+  let id = parseInt(req.params.movie_id);
+
+  const averageRating = await db.collection('users').aggregate([
+    { $unwind: "$movies" },
+    { $match: { "movies.movieid": id } },
+    { $group: {
+        _id: "$movies.movieid",
+        averageRating: { $avg: "$movies.rating" }
+    }}
+  ]).toArray();
+  
+  let results = await db.collection("movies").find({ _id: id }).toArray();
+  if (results.length === 0) {
+    res.send({}).status(404);
+    return;
+  }
+  results[0].averageRating = parseFloat(averageRating[0].averageRating.toFixed(2));
+
+  res.send(results[0]).status(200);
+});
+
+// 7 - delete movie by id
+router.delete("/:movie_id", async (req, res) => {
+  let id = parseInt(req.params.movie_id);
+  let results = await db.collection("movies").deleteOne({ _id: id });
+  res.send(results).status(200);
+});
+
+// 9 - update movie
+router.put("/:movie_id", async (req, res) => {
+  let id = parseInt(req.params.movie_id);
+  let movie = req.body;
+  let results = await db.collection("movies").updateOne({ _id: id }, { $set: movie });
+  res.send(results).status(200);
+});
+
 
 router.get("/top/:limit", async (req, res) => {
   // return 10 movies by id
@@ -23,41 +66,5 @@ router.get("/top/:limit", async (req, res) => {
   res.send(results).status(200);
 });
 
-router.post("/", async (req, res) => {
-  // create a new movie
-  let movie = req.body;
-  let results = await db.collection("movies").insertOne(movie);
-  res.send(results).status(200);
-});
-
-router.delete("/:movie_id", async (req, res) => {
-  // delete movie by id
-  let id = parseInt(req.params.movie_id);
-  let results = await db.collection("movies").deleteOne({ _id: id });
-  res.send(results).status(200);
-});
-
-router.post("/", async (req, res) => {
-  // inserir varios movies
-  let movie = req.body;
-  let results = await db.collection('movies').insertMany(movie);
-  res.send(results).status(200);
-});
-
-router.get("/:id", async (req, res) => {
-  // retornar os 5 melhores filmes pelo rating
-  let id = parseInt(req.params.id); // adicionar o match
-
-  const topMovies = await db.collection('users').aggregate([
-      { $unwind: "$movies" },
-      { $group: {
-          _id: "$movies.movieid",
-          ratings_totais: { $count: "movies.rating"}
-      }},
-      { $sort: { ratings_totais: -1 }}.limit(5),
-  ]).toArray();
-
-  res.status(200).json({ id, topMovies });
-});
 
 export default router;
