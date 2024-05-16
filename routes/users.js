@@ -64,6 +64,12 @@ router.put("/:user_id", async (req, res) => {
   res.send(results).status(200);
 });
 
+// 14 - 
+router.get / ("/users/stats", async (req, res) => {
+
+});
+
+
 router.get("/:gender/:age", async (req, res) => {
   // return user with gender and age
   let gender = req.params.gender.toUpperCase();

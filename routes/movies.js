@@ -59,28 +59,30 @@ router.put("/:movie_id", async (req, res) => {
   res.send(results).status(200);
 });
 
-// Nao funciona
 // 11 - return movies with highest average rating limited by num_movies
 router.get("/higher/:num_movies", async (req, res) => {
   let num_movies = parseInt(req.params.num_movies);
-  let results = await db.collection("movies").aggregate([
-    { $lookup: {
-        from: 'users',
-        localField: '_id',
-        foreignField: 'movies.movieid',
-        as: 'users'
-    }},
-    { $unwind: "$users" },
-    { $unwind: "$users.movies" },
+  let results = await db.collection("users").aggregate([
+    { $unwind: "$movies" },
     { $group: {
-        _id: "$_id",
-        title: { $first: "$title" },
-        averageRating: { $avg: "$users.movies.rating" }
+        _id: "$movies.movieid",
+        averageRating: { $avg: "$movies.rating" }
     }},
     { $sort: { averageRating: -1 }},
-    { $limit: num_movies }
+    { $limit: num_movies },
+    {
+      $lookup: {
+        from: "movies",
+        localField: "_id",
+        foreignField: "_id",
+        as: "movieInfo"
+      }
+    },
+    {
+      $unwind: "$movieInfo"
+    }
   ]).toArray();
-  res.send(results).status(200);
+  res.status(200).send(results);
 });
 
 // Nao funciona
