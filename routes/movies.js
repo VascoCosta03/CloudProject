@@ -20,6 +20,60 @@ router.post("/", async (req, res) => {
   res.send(results).status(200);
 });
 
+// 12 - return movies with most ratings asc or desc 
+router.get("/ratings/:order", async (req, res) => {
+  let order = req.params.order;
+  let orderType = order === "asc" ? 1 : -1;
+  let results = await db.collection("users").aggregate([
+    { $unwind: "$movies" },
+    { $group: {
+        _id: "$movies.movieid",
+        count: { $sum: 1 }
+    }
+    },
+    { $sort: { count: orderType } },
+    {
+      $lookup: {
+        from: "movies",
+        localField: "_id",
+        foreignField: "_id",
+        as: "movieInfo"
+      }
+    },
+    {
+      $unwind: "$movieInfo"
+    }
+  ]).toArray();
+  res.status(200).send(results);
+});
+
+// 13 - return movies with most 5 star ratings
+router.get("/star", async (req, res) => {
+  const topRatedMovies = await db.collection('users').aggregate([
+    { $unwind: "$movies" },
+    { $match: { "movies.rating": 5 }},
+    { $group: {
+        _id: "$movies.movieid",
+        count: { $sum: 1 }
+    }},
+    { $sort: { count: -1 }},
+    { $limit: 5 },
+    {
+      $lookup: {
+        from: "movies",
+        localField: "_id",
+        foreignField: "_id",
+        as: "movieInfo"
+      }
+    },
+    {
+      $unwind: "$movieInfo"
+    }
+  ]).toArray();
+
+  res.status(200).json(topRatedMovies);
+});
+
 // 5 - return movie by id and average rating
 router.get("/:movie_id", async (req, res) => {
   let id = parseInt(req.params.movie_id);
@@ -83,56 +137,6 @@ router.get("/higher/:num_movies", async (req, res) => {
     }
   ]).toArray();
   res.status(200).send(results);
-});
-
-// Nao funciona
-// 12 - return movies with most ratings asc or desc 
-router.get("/ratings/:order", async (req, res) => {
-  let order = req.params.order;
-  let sortOrder = order === "asc" ? 1 : -1;
-  let results = await db.collection("movies").aggregate([
-    { $lookup: {
-        from: 'users',
-        localField: '_id',
-        foreignField: 'movies.movieid',
-        as: 'users'
-    }},
-    { $unwind: "$users" },
-    { $group: {
-        _id: "$_id",
-        title: { $first: "$title" },
-        ratings: { $sum: 1 }
-    }},
-    { $sort: { ratings: sortOrder }}
-  ]).toArray();
-  res.send(results).status(200);
-});
-
-// 13 - return movies with most 5 star ratings
-router.get("/teste/star", async (req, res) => {
-  const topRatedMovies = await db.collection('users').aggregate([
-    { $unwind: "$movies" },
-    { $match: { "movies.rating": 5 }},
-    { $group: {
-        _id: "$movies.movieid",
-        count: { $sum: 1 }
-    }},
-    { $sort: { count: -1 }},
-    { $limit: 5 },
-    {
-      $lookup: {
-        from: "movies",
-        localField: "_id",
-        foreignField: "_id",
-        as: "movieInfo"
-      }
-    },
-    {
-      $unwind: "$movieInfo"
-    }
-  ]).toArray();
-
-  res.status(200).json(topRatedMovies);
 });
 
 router.get("/top/:limit", async (req, res) => {
