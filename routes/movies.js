@@ -147,5 +147,18 @@ router.get("/top/:limit", async (req, res) => {
   res.send(results).status(200);
 });
 
+// 15 - return movies by genre and year
+router.get("/genres/:genre_name/year/:year", async (req, res) => {
+  console.log("teste");
+  let genre = req.params.genre_name;
+  console.log(genre);
+  let year = req.params.year;
+  console.log(year);
+  let results = await db.collection("movies").aggregate([
+    { $unwind: "$genres"},
+    { $match: { genres: genre, year: year } }
+  ]).toArray();
+  res.status(200).send(results);
+});
 
 export default router;
