@@ -14,6 +14,23 @@ router.get("/", async (req, res) => {
   res.send(results).status(200);
 });
 
+// 14 - return for each user id, name, max rating, min rating, avg rating, order by avg rating
+router.get("/stats", async (req, res) => {
+  const results = await db.collection('users').aggregate([
+    { $unwind: "$movies" },
+    { $group: {
+        _id: "$_id",
+        name: { $first: "$name" },
+        maxRating: { $max: "$movies.rating" },
+        minRating: { $min: "$movies.rating" },
+        avgRating: { $avg: "$movies.rating" }
+    }},
+    { $sort: { avgRating: -1 }}
+  ]).toArray();
+  res.status(200).json(results);
+});
+
+
 // 4 - create a new user
 router.post("/", async (req, res) => {
   let user = req.body;
@@ -63,12 +80,6 @@ router.put("/:user_id", async (req, res) => {
   let results = await db.collection("users").updateOne({ _id: id }, { $set: user });
   res.send(results).status(200);
 });
-
-// 14 - 
-router.get / ("/users/stats", async (req, res) => {
-
-});
-
 
 router.get("/:gender/:age", async (req, res) => {
   // return user with gender and age

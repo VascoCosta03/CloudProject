@@ -75,6 +75,37 @@ router.get("/star", async (req, res) => {
   res.status(200).json(topRatedMovies);
 });
 
+// 16 - list all movies that contain their original title and return it as a new field
+router.get("/originaltitle", async (_, res) => {
+  let results = await db.collection("movies").aggregate([
+    { 
+      $addFields: { 
+        original_title: {
+          $regexFind: {
+            input: "$title", 
+            regex: /\((.*?)\)/,
+          }
+        } 
+      } 
+    },
+    {
+      $match: {
+        "original_title.match": { $ne: null } 
+      }
+    },
+    {
+      $project: {
+        original_title: "$original_title.match",
+        _id: 1,
+        title: 1,
+        genres: 1,
+        year: 1
+      }
+    }
+  ]).toArray();
+  res.status(200).send(results);
+});
+
 // 5 - return movie by id and average rating
 router.get("/:movie_id", async (req, res) => {
   let id = parseInt(req.params.movie_id);
@@ -149,16 +180,16 @@ router.get("/top/:limit", async (req, res) => {
 
 // 15 - return movies by genre and year
 router.get("/genres/:genre_name/year/:year", async (req, res) => {
-  console.log("teste");
   let genre = req.params.genre_name;
-  console.log(genre);
+  // capitalize first letter of genre
+  genre = genre.charAt(0).toUpperCase() + genre.slice(1);
   let year = req.params.year;
-  console.log(year);
   let results = await db.collection("movies").aggregate([
     { $unwind: "$genres"},
     { $match: { genres: genre, year: year } }
   ]).toArray();
   res.status(200).send(results);
 });
+
 
 export default router;
