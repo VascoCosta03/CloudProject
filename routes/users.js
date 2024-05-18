@@ -30,7 +30,6 @@ router.get("/stats", async (req, res) => {
   res.status(200).json(results);
 });
 
-
 // 4 - create a new user
 router.post("/", async (req, res) => {
   let user = req.body;
