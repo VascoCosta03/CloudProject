@@ -1,7 +1,7 @@
 import express from "express";
 import movies from "./routes/movies.js";
 import users from "./routes/users.js";
-import geo from "./routes/geo.js";
+import cinemas from "./routes/cinemas.js";
 import db from "./db/config.js";
 
 const app = express();
@@ -12,9 +12,8 @@ app.use(express.json());
 app.use("/movies", movies);
 // Load the /users routes
 app.use("/users", users);
-
-app.use("/geo", geo);
-
+// Load the /cinemas routes
+app.use("/cinemas", cinemas);
 app.listen(port, () => {
   console.log(`backend listening on port ${port}`);
 });
