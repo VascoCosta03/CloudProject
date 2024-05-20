@@ -5,6 +5,7 @@ import { ObjectId } from "mongodb";
 const router = express.Router();
 
 // 1 - Add movies from movies collection to cinemas collection
+// example = /cinemas/addMovie?movieID=2&cinemaID=1
 router.get("/addMovie", async (req, res) => {
     const movieID = parseInt(req.query.movieID);
     const cinemaID = parseInt(req.query.cinemaID);
