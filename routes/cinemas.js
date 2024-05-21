@@ -40,4 +40,18 @@ router.get("/addMovie", async (req, res) => {
     }
 });
 
+// 2 - Get all movies from a cinema
+router.get("/movies/:cinemaID", async (req, res) => {
+    const cinemaID = parseInt(req.params.cinemaID);
+    const cinema = await db.collection("cinemas").findOne({ id: cinemaID });
+
+    if (!cinema) {
+        res.status(404).send("Cinema not found");
+        return;
+    }
+
+    const results = await db.collection("movies").find
+    res.status(200).send(results);
+});
+
 export default router;
