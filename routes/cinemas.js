@@ -4,7 +4,7 @@ import { ObjectId } from "mongodb";
 
 const router = express.Router();
 
-// 1 - Add movies from movies collection to cinemas collection
+// 17 - Add movies from movies collection to cinemas collection
 // example = /cinemas/addMovie?movieID=2&cinemaID=1
 router.get("/addMovie", async (req, res) => {
     const movieID = parseInt(req.query.movieID);
@@ -40,18 +40,63 @@ router.get("/addMovie", async (req, res) => {
     }
 });
 
-// 2 - Get all movies from a cinema
-router.get("/movies/:cinemaID", async (req, res) => {
+// 19 - return movies near location
+// example = /cinemas/near?lat=40.748817&lon=-73.985428
+router.get("/near", async (req, res) => {
+    const lat = parseFloat(req.query.lat);
+    const lon = parseFloat(req.query.lon);
+
+    let results = await db.collection("cinemas").aggregate([
+        {
+            $geoNear: {
+                near: { type: "Point", coordinates: [lon, lat] },
+                distanceField: "distance",
+                spherical: true
+            }
+        }
+    ]).toArray();
+
+    res.status(200).send(results);
+});
+
+// 18 - Get all movies from a cinema
+// example = /cinemas/1
+router.get("/:cinemaID", async (req, res) => {
     const cinemaID = parseInt(req.params.cinemaID);
     const cinema = await db.collection("cinemas").findOne({ id: cinemaID });
 
+    // check for cinema
     if (!cinema) {
         res.status(404).send("Cinema not found");
         return;
     }
 
-    const results = await db.collection("movies").find
-    res.status(200).send(results);
+    let results = await db.collection("cinemas").aggregate([
+        { $unwind: "$movies" },
+        { $match: { id: cinemaID } },
+        {
+            $lookup: {
+                from: "movies",
+                localField: "movies",
+                foreignField: "_id",
+                as: "movieInfo"
+            }
+        },
+        { $unwind: "$movieInfo" }
+    ]).toArray();
+
+    // check for movies
+    if (results.length === 0) {
+        res.status(404).send("No movies found for this cinema");
+        return;
+    }
+    else {
+        results = results.map((result) => result.movieInfo);
+        res.status(200).send(results);
+        return
+    }
+    
 });
+
 
 export default router;
