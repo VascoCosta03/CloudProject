@@ -43,18 +43,21 @@ router.get("/addMovie", async (req, res) => {
 // 19 - return movies near location
 // example = /cinemas/near?lat=40.748817&lon=-73.985428
 router.get("/near", async (req, res) => {
-    const lat = parseFloat(req.query.lat);
     const lon = parseFloat(req.query.lon);
-
-    let results = await db.collection("cinemas").aggregate([
-        {
-            $geoNear: {
-                near: { type: "Point", coordinates: [lon, lat] },
-                distanceField: "distance",
-                spherical: true
+    const lat = parseFloat(req.query.lat);
+    console.log(lon)
+    console.log(lat)
+    let results = await db.collection("cinemas").find({
+        'geometry': {
+            $near: {
+                $geometry: {
+                    type: 'Point', 
+                    coordinates: [lon, lat]
+                },
+                    $maxDistance: 5000
+                }
             }
-        }
-    ]).toArray();
+        }).toArray();
 
     res.status(200).send(results);
 });
