@@ -43,23 +43,32 @@ router.get("/addMovie", async (req, res) => {
 // 19 - return movies near location
 // example = /cinemas/near?lat=40.748817&lon=-73.985428
 router.get("/near", async (req, res) => {
-    const lon = parseFloat(req.query.lon);
-    const lat = parseFloat(req.query.lat);
-    console.log(lon)
-    console.log(lat)
-    let results = await db.collection("cinemas").find({
-        'geometry': {
-            $near: {
-                $geometry: {
-                    type: 'Point', 
-                    coordinates: [lon, lat]
-                },
-                    $maxDistance: 5000
+    try {
+        const lon = parseFloat(req.query.lon);
+        const lat = parseFloat(req.query.lat);
+
+        // Check if lon and lat are valid numbers
+        if (isNaN(lon) || isNaN(lat)) {
+            return res.status(400).send({ error: 'Invalid coordinates' });
+        }
+
+        let results = await db.collection("cinemas").find({
+            'geometry': {
+                $near: {
+                    $geometry: {
+                        type: 'Point', 
+                        coordinates: [lon, lat],
+                        $maxDistance: 5000
+                    },
                 }
             }
         }).toArray();
 
-    res.status(200).send(results);
+        res.status(200).send(results);
+    } catch (error) {
+        console.error('Error executing geo query:', error);
+        res.status(500).send({ error: 'Internal server error' });
+    }
 });
 
 // 18 - Get all movies from a cinema
