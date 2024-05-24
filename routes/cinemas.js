@@ -71,7 +71,40 @@ router.get("/near", async (req, res) => {
     }
 });
 
-// 20 - Return cinemas near a route
+//20 - return cinemas near route
+// example = /cinemas/nearRoute?lon=-9.14217296415889&lat=38.7155597377788&lon2=-9.94217296415889&lat2=39.9155597377788
+router.get("/nearRoute", async (req, res) => {
+    try {
+        const lon = parseFloat(req.query.lon);
+        const lat = parseFloat(req.query.lat);
+        const lon2 = parseFloat(req.query.lon2);
+        const lat2 = parseFloat(req.query.lat2);
+
+        // Define the LineString route
+        const route = {
+            type: "LineString",
+            coordinates: [[lon, lat], [lon2, lat2]]
+        };
+
+        // Find cinemas that intersect with the LineString route
+        let results = await db.collection("cinemas").find({
+            'geometry': {
+                $geoIntersects: {
+                    $geometry: route
+                }
+            }
+        }).toArray();
+
+        if (results.length > 0) {
+            res.status(200).send(results);
+        } else {
+            res.status(404).send({ message: 'No cinemas found near the route' });
+        }
+    } catch (error) {
+        console.error('Error executing geo query:', error);
+        res.status(500).send({ error: 'Internal server error' });
+    }
+});
 
 // 21 - return how many cinemas near location
 // example = /cinemas/howmany?lat=38.7155597377788&lon=-9.14217296415889
