@@ -40,8 +40,8 @@ router.get("/addMovie", async (req, res) => {
     }
 });
 
-// 19 - return movies near location
-// example = /cinemas/near?lat=40.748817&lon=-73.985428
+// 19 - return cinemas near location
+// example = /cinemas/near?lat=38.7155597377788&lon=-9.14217296415889
 router.get("/near", async (req, res) => {
     try {
         const lon = parseFloat(req.query.lon);
@@ -58,8 +58,8 @@ router.get("/near", async (req, res) => {
                     $geometry: {
                         type: 'Point', 
                         coordinates: [lon, lat],
-                        $maxDistance: 5000
                     },
+                    $maxDistance: 5000
                 }
             }
         }).toArray();
@@ -70,6 +70,89 @@ router.get("/near", async (req, res) => {
         res.status(500).send({ error: 'Internal server error' });
     }
 });
+
+// 20 - Return cinemas near a route
+
+// 21 - return how many cinemas near location
+// example = /cinemas/howmany?lat=38.7155597377788&lon=-9.14217296415889
+router.get("/howmany", async (req, res) => {
+    try {
+        const lon = parseFloat(req.query.lon);
+        const lat = parseFloat(req.query.lat);
+
+        if (isNaN(lon) || isNaN(lat)) {
+            return res.status(400).send({ error: 'Invalid coordinates' });
+        }
+
+        const results = await db.collection("cinemas").aggregate([
+            {
+                $geoNear: {
+                    near: {
+                        type: "Point",
+                        coordinates: [lon, lat]
+                    },
+                    distanceField: "dist.calculated",
+                    maxDistance: 5000,
+                }
+            },
+            {
+                $count: "Count"
+            }
+        ]).toArray();
+
+        if (results.length > 0) {
+            res.status(200).send({results});
+        } else {
+            res.status(200).send({results: 0});
+        }
+    } catch (error) {
+        console.error('Error executing geo query:', error);
+        res.status(500).send({ error: 'Internal server error' });
+    }
+});
+
+// 22 - Return if point inside festival
+// example = /cinemas/festival?lat=38.7155597377788&lon=-9.14217296415889
+router.get("/festival", async (req, res) => {
+    try {
+        const lon = parseFloat(req.query.lon);
+        const lat = parseFloat(req.query.lat);
+
+        if (isNaN(lon) || isNaN(lat)) {
+            return res.status(400).send({ error: 'Invalid coordinates' });
+        }
+
+        const festival = await db.collection("cinemas").findOne({ id: 15 });
+
+        if (!festival) {
+            return res.status(404).send({ error: 'Festival not found' });
+        }
+
+        const point = { type: "Point", coordinates: [lon, lat] };
+
+        // Query for polygons that intersect with the point
+        const results = await db.collection("cinemas").findOne({
+            geometry: {
+                $geoWithin: {
+                    $geometry: {
+                        type: "Polygon",
+                        coordinates: festival.geometry.coordinates
+                    }
+                }
+            }
+        });
+
+        if (results.length > 0) {
+            res.status(200).send({ inside: true });
+        } else {
+            res.status(200).send({ inside: false });
+        }
+    } catch (error) {
+        console.error('Error executing geo query:', error);
+        res.status(500).send({ error: 'Internal server error' });
+    }
+});
+
 
 // 18 - Get all movies from a cinema
 // example = /cinemas/1
@@ -107,7 +190,6 @@ router.get("/:cinemaID", async (req, res) => {
         res.status(200).send(results);
         return
     }
-    
 });
 
 
