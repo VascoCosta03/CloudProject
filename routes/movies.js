@@ -172,13 +172,6 @@ router.get("/higher/:num_movies", async (req, res) => {
   res.status(200).send(results);
 });
 
-router.get("/top/:limit", async (req, res) => {
-  // return 10 movies by id
-  let limit = parseInt(req.params.limit);
-  let results = await db.collection("movies").find({}).limit(limit).toArray();
-  res.send(results).status(200);
-});
-
 // 15 - return movies by genre and year
 router.get("/genres/:genre_name/year/:year", async (req, res) => {
   let genre = req.params.genre_name;
