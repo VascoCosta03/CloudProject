@@ -34,7 +34,7 @@ router.get("/addMovie", async (req, res) => {
     }
 
     if (result.modifiedCount > 0) {
-        res.status(200).send("Movie added to cinema successfully");
+        res.status(200).send("Added movie " + movieID + " to cinema " + cinemaID);
     } else {
         res.status(500).send("Failed to add movie to cinema");
     }

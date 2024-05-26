@@ -6,6 +6,7 @@ const router = express.Router();
 
 
 // 1 - return movies by pagination and limit
+// 
 router.get("/", async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 20;
