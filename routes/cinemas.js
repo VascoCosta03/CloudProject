@@ -13,6 +13,7 @@ router.get("/addMovie", async (req, res) => {
     const movie = await db.collection("movies").findOne({ _id: movieID });
     const cinema = await db.collection("cinemas").findOne({ id: cinemaID });
 
+    // check for movie and cinema
     if (!movie || !cinema) {
         res.status(404).send("Movie or Cinema not found");
         return;
