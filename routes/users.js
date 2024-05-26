@@ -80,16 +80,4 @@ router.put("/:user_id", async (req, res) => {
   res.send(results).status(200);
 });
 
-router.get("/:gender/:age", async (req, res) => {
-  // return user with gender and age
-  let gender = req.params.gender.toUpperCase();
-  let age = parseInt(req.params.age);
-  let results = await db
-    .collection("users")
-    .find({ gender: gender, age: age })
-    .toArray();
-  res.send(results).status(200);
-});
-
-
 export default router;
